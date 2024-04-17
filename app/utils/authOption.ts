@@ -10,6 +10,11 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      authorization: {
+        params: {
+          scope: 'openid email profile https://www.googleapis.com/auth/youtube.readonly',
+        }
+      }
     }),
   ],
   // @ts-expect-error
@@ -19,11 +24,11 @@ export const authOptions: NextAuthOptions = {
   }),
   callbacks: {
     async session({ session, user, newSession, token, trigger }) {
-      // console.log('session', session);
-      // console.log('user', user);
-      // console.log('newSession', newSession);
-      // console.log('token', token);
-      // console.log('trigger', trigger);
+      console.log('session', session);
+      console.log('user', user);
+      console.log('newSession', newSession);
+      console.log('token', token);
+      console.log('trigger', trigger);
       const userObj = user ?? session.user;
       const signingSecret = process.env.SUPABASE_JWT_SECRET;
       if (signingSecret) {

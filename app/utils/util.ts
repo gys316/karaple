@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { SupabaseClient, createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
@@ -16,8 +16,40 @@ export async function getSession(req: NextRequest, res: NextResponse) {
       authOptions
     );
 
-    return session?.supabaseAccessToken;
+    return session;
   } catch (e) {
     return null;
   }
 };
+
+export async function getUser(userId: string) {
+  try {
+    const supabase = new SupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '', process.env.SUPABASE_SERVICE_ROLE_KEY ?? '');
+
+    const users = await supabase.schema('next_auth').from('account').select().eq('userId', userId);
+    if (users.data) {
+      return users.data[0];
+    }
+
+    return null;
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+}
+
+export async function getPlaylists(userId: string) {
+  try {
+    const supabase = new SupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '', process.env.SUPABASE_SERVICE_ROLE_KEY ?? '');
+
+    const playlists = await supabase.schema('public').from('playlist').select().eq('user_id', userId);
+    if (playlists.count ?? 0 > 0) {
+      return playlists.data;
+    }
+
+    return null;
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+}

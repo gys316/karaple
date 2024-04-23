@@ -4,7 +4,7 @@ import { SupabaseAdapter } from "@auth/supabase-adapter"
 import jwt from "jsonwebtoken"
 
 export const authOptions: NextAuthOptions = {
-  debug: true,
+  debug: false,
   // Configure one or more authentication providers
   providers: [
     GoogleProvider({
@@ -24,29 +24,31 @@ export const authOptions: NextAuthOptions = {
   }),
   callbacks: {
     async session({ session, user, newSession, token, trigger }) {
-      console.log('session', session);
-      console.log('user', user);
-      console.log('newSession', newSession);
-      console.log('token', token);
-      console.log('trigger', trigger);
-      const userObj = user ?? session.user;
-      const signingSecret = process.env.SUPABASE_JWT_SECRET;
-      if (signingSecret) {
-        const payload = {
-          aud: "authenticated",
-          exp: Math.floor(new Date(session.expires).getTime() / 1000),
-          sub: userObj?.id ?? userObj.name,
-          email: userObj.email,
-          role: "authenticated",
-        };
-        session.supabaseAccessToken = jwt.sign(payload, signingSecret);
-        session.user = {
-          ...session.user,
-          id: token.sub,
-        }
-      }
+      // console.log('session', session);
+      // console.log('user', user);
+      // console.log('newSession', newSession);
+      // console.log('token', token);
+      // console.log('trigger', trigger);
+      session.user = {
+        ...session.user,
+        id: token?.id as string ?? '',
+      };
 
       return session;
     },
-  }
+    async jwt({ token, account, user, profile }) {
+      console.log('profile', profile);
+      console.log('account', account);
+
+      // profile, account 는 로그인 직후 1회만 반환됨
+      if (account) {
+        token.id = user.id;
+      }
+
+      return token;
+    },
+  },
+  session: {
+    strategy: 'jwt',
+  },
 };

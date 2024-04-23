@@ -11,7 +11,6 @@ export async function GET(
   if (!session || !session.user.id) {
     return NextResponse.json({ message: "로그인이 필요합니다." }, { status: 401 });
   }
-  const body = await req.json();
   
   const user = await getUser(session.user.id);
   console.log('user', user);

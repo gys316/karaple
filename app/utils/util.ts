@@ -15,6 +15,7 @@ export async function getSession(req: NextRequest, res: NextResponse) {
       } as unknown as NextApiResponse,
       authOptions
     );
+    console.log('session', session);
 
     return session;
   } catch (e) {
@@ -26,7 +27,12 @@ export async function getUser(userId: string) {
   try {
     const supabase = new SupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '', process.env.SUPABASE_SERVICE_ROLE_KEY ?? '');
 
-    const users = await supabase.schema('next_auth').from('account').select().eq('userId', userId);
+    const users = await supabase.schema('next_auth').from('accounts').select('*').eq('userId', userId);
+    console.log('getUser => ', users)
+    if (users.error) {
+      console.error(users.error);
+      return null;
+    }
     if (users.data) {
       return users.data[0];
     }

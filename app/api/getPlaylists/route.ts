@@ -8,13 +8,13 @@ export async function GET(
   res: NextResponse
 ) {
   const session = await getSession(req, res);
-  if (!session || !session.user.id) {
+  console.log('---------------------------------------');
+  console.log(session);
+  if (!session || !session.user.id || !session.accessToken) {
     return NextResponse.json({ message: "로그인이 필요합니다." }, { status: 401 });
   }
   
-  const user = await getUser(session.user.id);
-  console.log('user', user);
-  const playlists = await getPlaylists(session.user.id);
+  let playlists = await getPlaylists(session.user.id);
   console.log('playlists', playlists);
   
   // 재생목록이 없을 경우
@@ -22,11 +22,12 @@ export async function GET(
     const apiUrl = `https://www.googleapis.com/youtube/v3/playlists?part=id,contentDetails,snippet,status&mine=true&maxResults=50`;
     const { data, status } = await axios.get(apiUrl, {
       headers: {
-        Authorization: `Bearer ${user.access_token}`,
+        Authorization: `Bearer ${session.accessToken}`,
       }
     });
 
     console.log(status, data);
+    playlists = data;
   }
 
   return NextResponse.json(playlists, { status: 200 });

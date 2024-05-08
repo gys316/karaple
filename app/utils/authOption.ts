@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthOptions } from "next-auth"
+import NextAuth, { NextAuthOptions, TokenSet } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { SupabaseAdapter } from "@auth/supabase-adapter"
 import jwt from "jsonwebtoken"
@@ -12,6 +12,8 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
       authorization: {
         params: {
+          access_type: "offline",
+          prompt: "consent",
           scope: 'openid email profile https://www.googleapis.com/auth/youtube.readonly',
         }
       }
@@ -23,32 +25,71 @@ export const authOptions: NextAuthOptions = {
     secret: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   }),
   callbacks: {
-    async session({ session, user, newSession, token, trigger }) {
-      // console.log('session', session);
-      // console.log('user', user);
-      // console.log('newSession', newSession);
-      // console.log('token', token);
-      // console.log('trigger', trigger);
-      session.user = {
-        ...session.user,
-        id: token?.id as string ?? '',
-      };
-
+    async session({ session, token }) {
+      session.user.id = token.id as string;
+      session.error = token.error;
+      session.accessToken = token.accessToken as string;
       return session;
     },
-    async jwt({ token, account, user, profile }) {
-      console.log('profile', profile);
-      console.log('account', account);
-
-      // profile, account 는 로그인 직후 1회만 반환됨
+    async jwt({ token, account, user }) {
       if (account) {
         token.id = user.id;
+
+        if (account.access_token) {
+          token.accessToken = account.access_token;
+          token.refreshToken = account.refresh_token;
+          token.accessTokenExpires = Date.now() + Number(account.expires_in) * 1000;
+        }
       }
 
-      return token;
+      // Return previous token if the access token has not expired yet
+      if (Date.now() < Number(token.accessTokenExpires)) {
+        return token;
+      }
+
+      // Access token has expired, try to update it
+      return refreshAccessToken(token);
     },
   },
   session: {
     strategy: 'jwt',
   },
+};
+
+async function refreshAccessToken(token: any) {
+  try {
+    const url = `https://oauth2.googleapis.com/token`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.GOOGLE_CLIENT_ID ?? '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+        refresh_token: token.refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+
+    const refreshedTokens = await response.json();
+
+    if (!response.ok) {
+      throw refreshedTokens;
+    }
+
+    return {
+      ...token,
+      accessToken: refreshedTokens.access_token,
+      accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,
+      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
+    };
+  } catch (error) {
+    console.error('RefreshAccessTokenError', error);
+
+    return {
+      ...token,
+      error: "RefreshAccessTokenError",
+    };
+  }
 };

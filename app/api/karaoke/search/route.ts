@@ -13,7 +13,7 @@ export async function POST(
   //   return NextResponse.json({ message: "로그인이 필요합니다." }, { status: 401 });
   // }
 
-  const { title } = await req.json();
+  const { title, searchType } = await req.json();
 
   const searchJoysound = async () => {
     const url = 'https://mspxy.joysound.com/Common/ContentsList';
@@ -106,7 +106,7 @@ export async function POST(
       searchOrderType: "",
       strCond: 0,
       natType: "",
-      strType: 1,
+      strType: searchType === 'artist' ? 2 : 1,
       strText: title,
     };
     const { data, status } = await axios.post(url, body, {

@@ -34,7 +34,7 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-start justify-between p-2 lg:p-24">
-      <div>
+      <div className="max-w-fit">
         <div>
           <RadioGroup
             defaultValue={searchType}

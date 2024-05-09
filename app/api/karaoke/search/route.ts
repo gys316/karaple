@@ -142,10 +142,44 @@ export async function POST(
 
     return songs;
   };
+
+  // 임시로 아티스트 검색
+  const searchJoysoundByArtist = async () => {
+    const url = `https://api.manana.kr/karaoke/singer/${title.replaceAll(/\s+/g, '')}/joysound.json`;
+    const { data, status } = await axios.get(url);
+  
+    const songs = data?.map((song: any) => {
+      return {
+        'title': song.title,
+        'artist': song.singer,
+        'number': song.no,
+        'type': 'joysound',
+        'additional_info': {},
+      }
+    });
+
+    return songs;
+  };
+  const searchDamByArtist = async () => {
+    const url = `https://api.manana.kr/karaoke/singer/${title.replaceAll(/\s+/g, '')}/dam.json`;
+    const { data, status } = await axios.get(url);
+    
+    const songs = data?.map((song: any) => {
+      return {
+        'title': song.title,
+        'artist': song.singer,
+        'number': song.no,
+        'type': 'dam',
+        'additional_info': {},
+      }
+    });
+
+    return songs;
+  };
   
   const songs = await Promise.all([
-    searchJoysound(),
-    searchDam(),
+    searchType === 'artist' ? searchJoysoundByArtist() : searchJoysound(),
+    searchType === 'artist' ? searchDamByArtist() : searchDam(),
     searchTj(),
   ]);
   const retArr = songs.flat();

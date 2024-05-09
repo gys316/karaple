@@ -26,7 +26,7 @@ export async function GET(
       }
     });
 
-    console.log(status, data);
+    // console.log(status, data);
     playlists = data;
   }
 

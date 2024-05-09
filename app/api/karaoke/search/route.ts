@@ -1,5 +1,6 @@
 import { getPlaylists, getSession, getUser } from "@/app/utils/util";
 import { createClient } from "@supabase/supabase-js";
+import { parse } from 'node-html-parser';
 import axios from "axios";
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -64,7 +65,7 @@ export async function POST(
     const body = {
       modelTypeCode: "1",
       serialNo: "AT00001",
-      keyword: "ginger",
+      keyword: title,
       compId: "1",
       authKey: "2/Qb9R@8s*",
       contentsCode: null,
@@ -119,32 +120,37 @@ export async function POST(
       }
     });
   
-    console.log(status, data);
+    // console.log(status, data);
+
+    const root = parse(data);
+    const table = root.querySelector('table.board_type1');
+    if (!table) return [];
+    const trArr = table.querySelectorAll('tbody tr');
+    const songs: any[] = [];
+    trArr?.forEach((tr) => {
+      const tdArr = tr.querySelectorAll('td');
+      if (tdArr.length <= 1) return;
   
-    // const songs = data.contentsList?.map((song: any) => {
-    //   const serviceList: any[] = song?.serviceTypeList ?? [];
-    //   const isHomeService = serviceList.some((serv) => serv?.serviceType === '100000000');
-  
-    //   return {
-    //     'title': song.songName,
-    //     'artist': song.artistName,
-    //     'number': song.selSongNo,
-    //     'type': 'tj',
-    //     'additional_info': {
-    //       isHomeService
-    //     },
-    //   }
-    // });
+      songs.push({
+        'title': tdArr[1].text,
+        'artist': tdArr[2].text,
+        'number': tdArr[0].text,
+        'type': 'tj',
+        'additional_info': {},
+      });
+    });
 
     return songs;
   };
   
-  // const songs = await Promise.all([
-  //   searchJoysound()
-  // ]);
-  const songs = await searchDam();
+  const songs = await Promise.all([
+    searchJoysound(),
+    searchDam(),
+    searchTj(),
+  ]);
+  const retArr = songs.flat();
 
-  console.log(songs);
+  console.log(retArr);
 
-  return NextResponse.json(songs, { status: 200 });
+  return NextResponse.json(retArr, { status: 200 });
 }

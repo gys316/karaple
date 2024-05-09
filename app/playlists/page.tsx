@@ -35,6 +35,15 @@ export default function PlaylistsPage() {
       })
   }, [session, status]);
 
+  const addPlaylist = async (playlistId: string, title: string, thumbnail: string) => {
+    const {status, data} = await axios.post('/api/addPlaylistItem', {
+      playlistId,
+      title,
+      thumbnail
+    });
+    console.log(status, data);
+  }
+
   return (
     <div className="bg-white p-8">
       <div className="flex items-center justify-start pb-2">
@@ -56,7 +65,7 @@ export default function PlaylistsPage() {
                         <img src={p.snippet.thumbnails.default.url}></img>
                       </CardContent>
                       <CardFooter>
-                        <Button onClick={() => console.log(p.id)}>추가</Button>
+                        <Button onClick={() => addPlaylist(p.id, p.snippet.title, p.snippet.thumbnails.default.url)}>추가</Button>
                       </CardFooter>
                     </CardHeader>
                   </Card>
